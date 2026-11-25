@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+/* A neutral palette. The client's own brand colour (Settings) is used for emails and the signer pages' accent bar.
+   The gra-* names are kept from the GR OS components this app started from; they carry no Grow Rwanda branding. */
+@theme {
+  --color-gra-blue: #1f5f8b;
+  --color-gra-blue-dark: #174a6d;
+  --color-gra-green: #23683f;
+  --color-gra-yellow: #b7791f;
+  --color-gra-deep: #1b3a52;
+  --color-gra-page: #f6f7f8;
+  --color-gra-ink: #1b2330;
+  --color-gra-ink-2: #5a6575;
+  --color-gra-muted: #7b8594;
+  --color-gra-hair: #dde2e8;
+  --color-gra-wash: #eef4f9;
+
+  --color-ink: #1b2330;
+  --color-ink-2: #5a6575;
+  --color-muted: #7b8594;
+  --color-hair: #dde2e8;
+  --color-wash: #eef4f9;
+  --color-accent: #1f5f8b;
+
+  --color-brand-50: #eef4f9;
+  --color-brand-100: #d5e5f1;
+  --color-brand-600: #1f5f8b;
+  --color-brand-700: #1b3a52;
+  --color-brand-800: #15304a;
+  --color-brand-900: #10263a;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+  background: var(--color-gra-page);
+  color: var(--color-gra-ink);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+h1 {
+  letter-spacing: -0.01em;
+}
+
+@utility btn {
+  @apply inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-md border-[1.5px] border-transparent px-4 py-1.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50;
+}
+@utility btn-primary {
+  @apply btn bg-gra-blue text-white hover:bg-gra-blue-dark;
+}
+@utility btn-secondary {
+  @apply btn border-gra-hair bg-white text-gra-ink hover:border-gra-blue hover:text-gra-blue;
+}
+@utility btn-danger {
+  @apply btn bg-rose-700 text-white hover:bg-rose-800;
+}
+@layer components {
+  /* 16px on phones so iPhones don't zoom into fields; 14px from 640px up. */
+  .input {
+    @apply w-full rounded-md border border-gra-hair bg-white px-2.5 py-1.5 text-base text-gra-ink focus:border-gra-blue focus:ring-2 focus:ring-brand-100 focus:outline-none disabled:bg-gray-50 disabled:text-gray-500 sm:text-sm;
+  }
+  .label {
+    @apply mb-1 block text-xs font-medium text-gra-ink-2;
+  }
+  .table {
+    @apply w-full border-collapse text-left text-sm;
+  }
+  .table th {
+    @apply border-b border-gra-hair px-2.5 py-2 text-[11.5px] font-semibold tracking-wider whitespace-nowrap text-gra-muted uppercase;
+  }
+  .table td {
+    @apply border-b border-gra-hair px-2.5 py-2.5 align-top;
+  }
+  .table tbody tr:hover td {
+    background: var(--color-gra-wash);
+  }
+  a.link {
+    @apply font-medium text-gra-blue hover:underline;
+  }
+  .tricolor {
+    display: flex;
+    height: 4px;
+    background: var(--brand, var(--color-gra-blue));
+  }
+  .tricolor span {
+    display: none;
+  }
+}
+
+/* Keyboard focus is always visible (accessibility). */
+:focus-visible {
+  outline: 2px solid var(--color-gra-blue);
+  outline-offset: 2px;
+}

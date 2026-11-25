@@ -1,0 +1,12 @@
+node_modules
+.next
+prisma/dev.db*
+.env
+next-env.d.ts
+*.tsbuildinfo
+
+# Local HR sheet export used when the Sheets API isn't configured
+data/
+
+# Internal drafts and proposals, not committed
+internal/

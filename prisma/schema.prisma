@@ -1,0 +1,384 @@
+// Agreement Signer. Postgres. Every schema change needs a migration (npx prisma migrate dev --name <what>), never db push.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- people and login ----------
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique // lower case
+  name         String
+  title        String   @default("")
+  role         String   @default("SENDER") // ADMIN | SENDER
+  active       Boolean  @default(true)
+  sessionEpoch Int      @default(0) // raised by "Sign out everywhere"
+  createdAt    DateTime @default(now())
+  mcpTokens    McpToken[]
+}
+
+model LoginCode {
+  id          String    @id @default(cuid())
+  email       String
+  userId      String?   // null when the address isn't an active user (nothing is sent; the row only counts the attempt)
+  codeHash    String    @default("")
+  linkHash    String    @default("") // the one-click link's secret, hashed
+  browserHash String    @default("") // hash of the nonce cookie set in the browser that asked: the link works only there
+  expiresAt   DateTime
+  attempts    Int       @default(0)
+  lockedUntil DateTime?
+  usedAt      DateTime?
+  ip          String    @default("")
+  createdAt   DateTime
+
+  @@index([email, createdAt])
+  @@index([ip, createdAt])
+}
+
+model Session {
+  id         String   @id @default(cuid())
+  tokenHash  String   @unique
+  userId     String
+  epoch      Int      @default(0)
+  authAt     DateTime // when the email code (or link) was confirmed
+  expiresAt  DateTime // sliding: 14 days after last use
+  absoluteAt DateTime // hard cap: 30 days after authAt
+  lastSeenAt DateTime
+  ip         String   @default("")
+  userAgent  String   @default("")
+
+  @@index([userId])
+}
+
+model Setting {
+  key   String @id
+  value String
+}
+
+// ---------- Airtable ----------
+
+model AirtableConnection {
+  id             String    @id @default("default")
+  tokenEnc       String    @default("") // encrypted personal access token
+  baseId         String    @default("")
+  baseName       String    @default("")
+  tableId        String    @default("")
+  tableName      String    @default("")
+  searchFields   String    @default("[]") // JSON array of field ids shown and searched in lead lists
+  writeBack      Boolean   @default(false)
+  writeBackMap   String    @default("{}") // JSON: { status, sentAt, signedAt, link } -> field id
+  lastCheckedAt  DateTime?
+  lastError      String    @default("")
+  updatedAt      DateTime
+}
+
+model AirtableWrite {
+  id          String    @id @default(cuid())
+  agreementId String
+  recordId    String
+  fields      String    // JSON of field id -> value
+  attempts    Int       @default(0)
+  nextAt      DateTime?
+  doneAt      DateTime?
+  lastError   String    @default("")
+  createdAt   DateTime
+
+  @@index([doneAt, nextAt])
+  @@index([agreementId])
+}
+
+// ---------- templates ----------
+
+model Template {
+  id        String   @id @default(cuid())
+  name      String
+  archived  Boolean  @default(false)
+  createdAt DateTime
+}
+
+model TemplateVersion {
+  id           String   @id @default(cuid())
+  templateId   String
+  version      Int
+  fileName     String
+  storageKey   String
+  sha256       String
+  scan         String   // JSON: { fields, sections, anchors, signers }
+  published    Boolean  @default(false)
+  signingOrder String   @default("SEQUENTIAL") // SEQUENTIAL | PARALLEL
+  createdById  String
+  createdAt    DateTime
+  publishedAt  DateTime?
+
+  @@unique([templateId, version])
+}
+
+model TemplateField {
+  id         String  @id @default(cuid())
+  versionId  String
+  tag        String
+  label      String
+  type       String  @default("TEXT") // TEXT | LONG_TEXT | MONEY | NUMBER | PERCENT | DATE | EMAIL | PHONE | BOOLEAN
+  required   Boolean @default(true)
+  help       String  @default("")
+  defaultVal String  @default("")
+  min        Float?
+  max        Float?
+  locked     Boolean @default(false) // an Airtable value can't be overridden
+  source     String  @default("ASK") // AIRTABLE | FIXED | ASK
+  airtableId String  @default("")   // field id when source = AIRTABLE
+  isSwitch   Boolean @default(false) // a section toggle ({{#tag}})
+  position   Int     @default(0)
+
+  @@unique([versionId, tag])
+}
+
+model TemplateParty {
+  id         String @id @default(cuid())
+  versionId  String
+  signer     Int    // N in {{sig:N}}
+  role       String // "Client", "Company"
+  source     String @default("LEAD") // LEAD | SIGNATORY | TYPED
+  nameField  String @default("") // Airtable field id (LEAD)
+  emailField String @default("") // Airtable field id (LEAD)
+  companyField String @default("")
+  userId     String? // SIGNATORY
+
+  @@unique([versionId, signer])
+}
+
+// ---------- agreements ----------
+
+model Agreement {
+  id               String    @id @default(cuid())
+  reference        String    @unique // SA-2026-0042
+  templateVersionId String
+  title            String
+  recordId         String    @default("") // Airtable record
+  leadLabel        String    @default("")
+  values           String    @default("{}") // JSON: tag -> { value, source, airtableField?, original? }
+  switches         String    @default("{}") // JSON: tag -> boolean
+  parties          String    @default("[]") // JSON: [{ signer, role, name, email, company }]
+  status           String    @default("DRAFT") // mirrors the envelope once sent
+  ownerId          String
+  envelopeId       String?
+  docxKey          String    @default("")
+  docxHash         String    @default("")
+  frozenAt         DateTime?
+  createdAt        DateTime
+  updatedAt        DateTime
+
+  @@index([ownerId, status])
+  @@index([recordId])
+}
+
+model AgreementCounter {
+  year Int @id
+  last Int @default(0)
+}
+
+// ---------- Sign (from GR OS, without the seal and the internal-signer path) ----------
+
+model SignEnvelope {
+  id               String    @id @default(cuid())
+  title            String
+  source           String    @default("UPLOAD") // UPLOAD | AGREEMENT
+  sourceRef        String    @default("")
+  ownerId          String
+  status           String    @default("DRAFT")
+  signingOrder     String    @default("PARALLEL") // SEQUENTIAL | PARALLEL
+  expiresAt        DateTime?
+  message          String    @default("")
+  viewers          String    @default("[]") // JSON: [{ name, email }] cc viewers
+  confidential     Boolean   @default(false)
+  fileName         String    @default("document.pdf")
+  pageCount        Int       @default(0)
+  originalHash     String    @default("")
+  finalHash        String    @default("")
+  certified        Boolean   @default(false) // PDF digital certificate applied
+  certNote         String    @default("")
+  completionMethod String    @default("ELECTRONIC") // ELECTRONIC | PAPER
+  reason           String    @default("")
+  createdAt        DateTime
+  sentAt           DateTime?
+  completedAt      DateTime?
+  stoppedAt        DateTime?
+  lastReminderAt   DateTime?
+
+  @@index([ownerId, status])
+  @@index([finalHash])
+}
+
+model SignSigner {
+  id              String    @id @default(cuid())
+  envelopeId      String
+  order           Int
+  name            String
+  email           String
+  company         String    @default("")
+  role            String    @default("") // party role shown to people ("Client")
+  userId          String?   // set when the signer is a user (saved signature offered)
+  status          String    @default("WAITING")
+  viewedAt        DateTime?
+  signedAt        DateTime?
+  verifiedAt      DateTime?
+  ip              String    @default("")
+  userAgent       String    @default("")
+  typedName       String    @default("")
+  signatureImage  String    @default("")
+  initialsImage   String    @default("")
+  consentText     String    @default("")
+  consentVersion  Int       @default(0)
+  declineReason   String    @default("")
+  linkNonce       String    @default("")
+  sessionNonce    String    @default("")
+  codeHash        String    @default("")
+  codeExpiresAt   DateTime?
+  codeAttempts    Int       @default(0)
+  codeLockedUntil DateTime?
+
+  @@index([envelopeId, order])
+  @@index([email])
+}
+
+model SignaturePreference {
+  userId         String   @id
+  signatureImage String
+  initialsImage  String   @default("")
+  method         String   @default("TYPED")
+  updatedAt      DateTime
+}
+
+model SignField {
+  id         String  @id @default(cuid())
+  envelopeId String
+  signerId   String
+  type       String
+  page       Int
+  x          Float
+  y          Float
+  width      Float
+  height     Float
+  required   Boolean @default(true)
+  label      String  @default("")
+  value      String  @default("")
+  placedBy   String  @default("DRAG")
+
+  @@index([envelopeId])
+}
+
+model SignFieldTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  pageCount   Int
+  signerCount Int
+  fields      String
+  createdById String
+  createdAt   DateTime
+}
+
+model SignEvent {
+  id         String   @id @default(cuid())
+  envelopeId String
+  signerId   String?
+  actorId    String?
+  type       String
+  at         DateTime
+  ip         String   @default("")
+  userAgent  String   @default("")
+  details    String   @default("")
+
+  @@index([envelopeId, at])
+  @@index([signerId, type, at])
+}
+
+model SignDocVersion {
+  id         String   @id @default(cuid())
+  envelopeId String
+  seq        Int
+  kind       String
+  signerId   String?
+  storageKey String
+  sha256     String
+  sizeBytes  Int
+  createdAt  DateTime
+
+  @@unique([envelopeId, seq])
+  @@index([sha256])
+}
+
+// ---------- MCP / OAuth (from GR OS) ----------
+
+model OAuthClient {
+  id           String   @id
+  name         String
+  redirectUris String
+  createdAt    DateTime
+}
+
+model OAuthCode {
+  hash          String    @id
+  clientId      String
+  userId        String
+  redirectUri   String
+  codeChallenge String
+  scope         String    @default("")
+  resource      String    @default("")
+  expiresAt     DateTime
+  usedAt        DateTime?
+}
+
+model McpToken {
+  id           String    @id @default(cuid())
+  hash         String    @unique
+  kind         String    // ACCESS | REFRESH
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId     String
+  clientName   String    @default("")
+  sessionEpoch Int       @default(0)
+  family       String
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  lastUsedAt   DateTime?
+  createdAt    DateTime
+
+  @@index([userId, kind])
+  @@index([family])
+}
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  userId     String
+  name       String
+  prefix     String
+  hash       String    @unique
+  createdAt  DateTime
+  revokedAt  DateTime?
+  lastUsedAt DateTime?
+
+  @@index([userId])
+}
+
+model McpAudit {
+  id         String   @id @default(cuid())
+  userId     String
+  tool       String
+  kind       String   @default("write")
+  status     String   @default("")
+  clientName String   @default("")
+  input      String
+  result     String
+  results    Int?
+  ms         Int?
+  ok         Boolean
+  at         DateTime
+
+  @@index([userId, at])
+  @@index([at])
+}
