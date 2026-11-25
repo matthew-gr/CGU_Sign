@@ -10,8 +10,8 @@ export default async function NewDocument() {
   return (
     <>
       <PageTitle
-        title="New document"
-        subtitle="Upload a ready PDF, then add signers, place fields and send it for signature."
+        title="Upload a document"
+        subtitle="For anything that isn't made from a template: upload a PDF or a photo, add signers, place fields and send it for signature."
         actions={
           <Link href="/envelopes" className="btn-secondary">
             All documents
@@ -22,7 +22,7 @@ export default async function NewDocument() {
         <Notice tone="warn">Your account can&apos;t send documents for signature.</Notice>
       ) : (
         <div className="max-w-2xl">
-          <Card title="Upload a PDF">
+          <Card title="Upload">
             <Upload />
           </Card>
         </div>

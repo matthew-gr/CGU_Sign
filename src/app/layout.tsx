@@ -36,7 +36,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                 New agreement
               </Link>
               <Link href="/envelopes" className="text-gra-ink-2 hover:text-gra-ink">
-                Other documents
+                Uploaded documents
               </Link>
               {isAdmin(me) && (
                 <>

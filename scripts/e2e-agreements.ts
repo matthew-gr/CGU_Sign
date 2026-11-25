@@ -207,7 +207,15 @@ async function main() {
   check("mcp: void needs confirm", !v1.ok && /confirm: true/.test(v1.error));
   check("mcp: every call logged", (await db.mcpAudit.count()) >= 9);
 
-  // ---------- 8. click tracking off on real delivery ----------
+  // ---------- 8. uploaded documents (SND-6): a photo becomes a one-page PDF, fields placed by hand, sent ----------
+  const photo = await S.createEnvelope(sender, { title: "Change order (photo)", bytes: Buffer.from(PNG.split(",")[1], "base64"), fileName: "change-order.png" });
+  check("upload: a PNG becomes a one-page PDF", photo.pageCount === 1 && photo.fileName.endsWith(".pdf"), photo);
+  const [ps] = await S.setSigners(sender, photo.id, [{ name: "Jane Smith", email: "jane@example.com" }], "PARALLEL");
+  await S.setFields(sender, photo.id, [{ signerId: ps.id, type: "SIGNATURE", page: 1, x: 0.1, y: 0.7, width: 0.4, height: 0.1 }]);
+  const sentPhoto = await S.sendEnvelope(sender, photo.id);
+  check("upload: sent for signature", sentPhoto.status === "SENT");
+
+  // ---------- 9. click tracking off on real delivery ----------
   const { sendEmail } = await import("../src/lib/email");
   const realFetch = globalThis.fetch;
   let body: { tracking_settings?: { click_tracking?: { enable: boolean }; open_tracking?: { enable: boolean } } } = {};

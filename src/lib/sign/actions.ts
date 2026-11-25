@@ -52,7 +52,7 @@ export async function uploadEnvelope(fd: FormData): Promise<SignResult> {
   const me = await getActor();
   return run(async () => {
     const f = await fileOf(fd);
-    if (f.mime !== "application/pdf" && !/\.pdf$/i.test(f.name)) throw new S.SignError("Upload a PDF.");
+    if (!/^(application\/pdf|image\/(jpeg|png))$/.test(f.mime) && !/\.(pdf|jpe?g|png)$/i.test(f.name)) throw new S.SignError("Upload a PDF, JPG or PNG.");
     const env = await S.createEnvelope(me, { title: field(fd, "title") || f.name.replace(/\.(pdf|jpe?g|png)$/i, ""), bytes: f.bytes, fileName: f.name }, await ctx());
     return env.id;
   });

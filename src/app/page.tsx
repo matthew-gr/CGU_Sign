@@ -19,11 +19,16 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
     <>
       <PageTitle
         title="Agreements"
-        subtitle={isAdmin(me) ? "Every agreement in the company." : "Agreements you've prepared."}
+        subtitle={<>{isAdmin(me) ? "Every agreement made from a template." : "Agreements you've prepared from a template."} Uploaded documents are under <Link className="link" href="/envelopes">Uploaded documents</Link>.</>}
         actions={
-          <Link href="/agreements/new" className="btn-primary">
-            New agreement
-          </Link>
+          <span className="flex gap-2">
+            <Link href="/envelopes/new" className="btn-secondary">
+              Upload a document
+            </Link>
+            <Link href="/agreements/new" className="btn-primary">
+              New agreement
+            </Link>
+          </span>
         }
       />
       <form className="mb-4 flex flex-wrap items-end gap-2">

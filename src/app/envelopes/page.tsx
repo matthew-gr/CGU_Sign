@@ -28,8 +28,8 @@ export default async function DocumentsHome({ searchParams }: { searchParams: Pr
   return (
     <>
       <PageTitle
-        title="Other documents"
-        subtitle="Send a ready PDF for e-signature. Signers confirm with a code emailed to them; the result is a locked PDF with a completion certificate."
+        title="Uploaded documents"
+        subtitle="Send any PDF or photo for e-signature: upload it, add signers, drag fields onto it and send. Signers confirm with a code emailed to them; the result is a locked PDF with a completion certificate."
         actions={
           <div className="flex flex-wrap gap-2">
             <Link href="/verify" className="btn-secondary">
@@ -37,7 +37,7 @@ export default async function DocumentsHome({ searchParams }: { searchParams: Pr
             </Link>
             {creator && (
               <Link href="/envelopes/new" className="btn-primary">
-                + New document
+                + Upload a document
               </Link>
             )}
           </div>
