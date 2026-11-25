@@ -34,7 +34,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   companyName: process.env.COMPANY_NAME || "Your Company",
   productName: "Agreements",
   logoUrl: "",
-  brandColor: "#1f5f8b",
+  brandColor: "#912b8e", // Caregivers United plum
   timeZone: process.env.COMPANY_TIME_ZONE || "America/New_York",
   senderName: process.env.COMPANY_NAME || "Agreements",
   replyTo: "",
@@ -51,6 +51,8 @@ const KEY = "app:settings";
 export async function appSettings(): Promise<AppSettings> {
   const row = await db.setting.findUnique({ where: { key: KEY } });
   const s = { ...DEFAULT_SETTINGS, ...(row ? (JSON.parse(row.value) as Partial<AppSettings>) : {}) };
+  // Settings saved before the brand guide kept the old placeholder blue: use the brand plum instead.
+  if (!s.brandColor || s.brandColor.toLowerCase() === "#1f5f8b") s.brandColor = DEFAULT_SETTINGS.brandColor;
   if (!s.consent?.length) s.consent = DEFAULT_SETTINGS.consent;
   return s;
 }

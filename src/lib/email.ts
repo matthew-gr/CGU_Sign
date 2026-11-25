@@ -54,18 +54,19 @@ export async function brandedHtml(subject: string, body: string, link?: string, 
     .map((p) => `<p style="margin:0 0 12px">${p.replace(/\n/g, "<br/>")}</p>`)
     .join("");
   const button = link
-    ? `<p style="margin:18px 0 4px"><a href="${esc(absolute(link))}" style="display:inline-block;background:${color};color:#ffffff;padding:11px 20px;border-radius:6px;text-decoration:none;font:600 14px Arial,sans-serif">${esc(linkLabel)}</a></p>`
+    ? `<p style="margin:18px 0 4px"><a href="${esc(absolute(link))}" style="display:inline-block;background:${color};color:#ffffff;padding:12px 22px;border-radius:3px;text-decoration:none;font:700 14px Arial,sans-serif;letter-spacing:.5px;text-transform:uppercase">${esc(linkLabel)}</a></p>`
     : "";
-  const logo = s.logoUrl && /^https:\/\//.test(s.logoUrl) ? `<img src="${esc(s.logoUrl)}" alt="${esc(s.companyName)}" height="32" style="display:block;height:32px;margin-bottom:16px" />` : `<p style="font:700 16px Arial,sans-serif;margin:0 0 16px;color:${color}">${esc(s.companyName)}</p>`;
-  return `<div style="background:#f4f6f8;padding:24px 12px">
-<div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:10px;overflow:hidden;font-family:Arial,sans-serif;font-size:15px;line-height:1.55;color:#1b2330">
+  const logoSrc = s.logoUrl && /^https:\/\//.test(s.logoUrl) ? s.logoUrl : appUrl().startsWith("https://") ? `${appUrl()}/brand/logo.png` : "";
+  const logo = logoSrc ? `<img src="${esc(logoSrc)}" alt="${esc(s.companyName)}" height="56" style="display:block;height:56px;margin-bottom:16px" />` : `<p style="font:700 16px Arial,sans-serif;margin:0 0 16px;color:${color}">${esc(s.companyName)}</p>`;
+  return `<div style="background:#f9f9f9;padding:24px 12px">
+<div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:10px;overflow:hidden;font-family:'Open Sans',Arial,sans-serif;font-size:15px;line-height:1.6;color:#333333">
 <div style="height:4px;background:${color}"></div>
 <div style="padding:24px 28px 26px">
 ${logo}
-<h2 style="font:600 19px Arial,sans-serif;margin:0 0 12px">${esc(subject)}</h2>
+<h2 style="font:700 21px Georgia,'Times New Roman',serif;color:${color};margin:0 0 12px">${esc(subject)}</h2>
 ${paragraphs}${button}
 </div>
-<div style="padding:12px 28px;background:#f4f6f8;font-size:12px;color:#5a6575">${esc(s.companyName)}</div>
+<div style="padding:12px 28px;background:#f9f9f9;border-top:3px solid #1477bd;font-size:12px;color:#666666">${esc(s.companyName)}</div>
 </div></div>`;
 }
 

@@ -42,4 +42,4 @@ export function middleware(req: NextRequest) {
   return res;
 }
 
-export const config = { matcher: ["/((?!_next|favicon|icon.png).*)"] };
+export const config = { matcher: ["/((?!_next|favicon|icon|apple-icon|brand/).*)"] };

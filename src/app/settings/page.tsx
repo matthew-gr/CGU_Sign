@@ -40,7 +40,7 @@ export default async function Settings() {
                 <input name="logoUrl" className="input" defaultValue={s.logoUrl} />
               </label>
               <label>
-                <span className="label">Brand colour</span>
+                <span className="label">Brand color</span>
                 <input name="brandColor" className="input" defaultValue={s.brandColor} />
               </label>
               <label>
@@ -75,7 +75,7 @@ export default async function Settings() {
         </Card>
         <Card title={`Consent to electronic records (version ${consent.version})`}>
           <div className="mb-3">
-            <Notice tone="warn">The client&apos;s US counsel should approve this text before going live (ESIGN §101(c), UETA). Each change is saved as a new version; every signature keeps the text and version its signer accepted.</Notice>
+            <Notice tone="warn">Your attorney should approve this text before going live (ESIGN §101(c), UETA). Each change is saved as a new version; every signature keeps the text and version its signer accepted.</Notice>
           </div>
           <ActionForm action={saveConsent} submitLabel="Save as a new version" keepValues>
             <textarea name="consentText" className="input" rows={14} defaultValue={consent.text} />

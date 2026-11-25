@@ -10,8 +10,10 @@ export function SignerShell({ title, from, message, company, children }: { title
   return (
     <div className="mx-auto max-w-3xl space-y-4 px-3 py-6 sm:px-4">
       <div>
-        <p className="text-xs font-medium tracking-wide uppercase" style={{ color: "var(--brand)" }}>{company ? `${company} · electronic signature` : "Electronic signature"}</p>
-        <h1 className="text-2xl leading-tight font-semibold text-gra-ink">{title}</h1>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/brand/logo.png" alt={company ?? ""} className="mb-4 h-16 w-auto" />
+        <p className="text-[18px] font-light tracking-wide text-brandblue uppercase">Electronic signature</p>
+        <h1 className="text-3xl leading-tight font-bold">{title}</h1>
         {from && <p className="mt-1 text-sm text-gra-ink-2">Sent by {from}</p>}
       </div>
       {message && <p className="rounded-xl bg-gra-wash px-3.5 py-2.5 text-sm whitespace-pre-line text-gra-deep">{message}</p>}

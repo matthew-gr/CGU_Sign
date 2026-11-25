@@ -43,7 +43,7 @@ export async function saveCompanySettings(fd: FormData): Promise<Result> {
     const years = Number(field(fd, "retentionYears"));
     if (!Number.isInteger(years) || years < 1 || years > 30) throw new UserError("Retention must be 1 to 30 years.");
     const color = field(fd, "brandColor");
-    if (color && !/^#[0-9a-fA-F]{6}$/.test(color)) throw new UserError("The brand colour must look like #1f5f8b.");
+    if (color && !/^#[0-9a-fA-F]{6}$/.test(color)) throw new UserError("The brand color must look like #912b8e.");
     const logo = field(fd, "logoUrl");
     if (logo && !/^https:\/\//.test(logo)) throw new UserError("The logo must be an https:// address.");
     const prefix = field(fd, "referencePrefix").toUpperCase();

@@ -342,18 +342,33 @@ export type CertSigner = {
 /** company: shown under the title. timeNote: which zone times are in. */
 export type CertInput = { title: string; envelopeId: string; sourceRef: string; originalHash: string; completedAt: string; signers: CertSigner[]; certNote: string; company: string; timeNote: string };
 
+/** The company logo for the certificate (public/brand/logo.png), or null when it isn't there. */
+async function brandLogo(doc: PDFDocument) {
+  try {
+    const { readFile } = await import("node:fs/promises");
+    const path = await import("node:path");
+    return await doc.embedPng(new Uint8Array(await readFile(path.join(process.cwd(), "public", "brand", "logo.png"))));
+  } catch {
+    return null;
+  }
+}
+
 /** Append the certificate page(s): what was signed, and by whom, how and when. */
 export async function appendCertificate(buf: Uint8Array, c: CertInput): Promise<Uint8Array> {
   const doc = await PDFDocument.load(buf, { updateMetadata: false });
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
   const mono = await doc.embedFont(StandardFonts.Courier);
-  const blue = rgb(0.13, 0.36, 0.46);
-  const grey = rgb(0.35, 0.35, 0.35);
+  const serif = await doc.embedFont(StandardFonts.TimesRomanBold);
+  // Caregivers United: plum headings, the blue rule; grey #666666 labels.
+  const blue = rgb(0x91 / 255, 0x2b / 255, 0x8e / 255);
+  const rule = rgb(0x14 / 255, 0x77 / 255, 0xbd / 255);
+  const grey = rgb(0.4, 0.4, 0.4);
+  const logo = await brandLogo(doc);
   let page = doc.addPage([595, 842]);
   let y = 790;
   const stripe = () => {
-    page.drawRectangle({ x: 0, y: 836, width: 612, height: 6, color: blue });
+    page.drawRectangle({ x: 0, y: 836, width: 612, height: 6, color: rule });
   };
   stripe();
   const line = (label: string, value: string, f: PDFFont = font, size = 9) => {
@@ -388,7 +403,12 @@ export async function appendCertificate(buf: Uint8Array, c: CertInput): Promise<
     }
     if (cur.trim()) flush();
   };
-  page.drawText("Certificate of completion", { x: 50, y, size: 18, font: bold, color: blue });
+  if (logo) {
+    const h = 46;
+    const w = (logo.width / logo.height) * h;
+    page.drawImage(logo, { x: 545 - w, y: y - 18, width: w, height: h });
+  }
+  page.drawText("Certificate of completion", { x: 50, y, size: 18, font: serif, color: blue });
   y -= 18;
   page.drawText(clean(`${c.company} - electronic signature record`), { x: 50, y, size: 9, font, color: grey });
   y -= 26;
